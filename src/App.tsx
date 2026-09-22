@@ -1,14 +1,18 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
+import classNames from 'classnames';
 import React, { useState, useEffect } from 'react';
 import { UserWarning } from './UserWarning';
 import { USER_ID } from './api/todos';
 import { getTodos } from './api/todos';
 import type { Todo } from './types/Todo';
+import { TodoList } from './components/TodoList/TodoList';
+import { TodoFilter, FILTERS } from './components/TodoFilter/TodoFilter';
+import { NewTodo } from './components/NewTodo/NewTodo';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(FILTERS.ALL);
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -32,17 +36,19 @@ export const App: React.FC = () => {
     todo => todo.completed === false,
   ).length;
   const visibleTodos = todos.filter(todo => {
-    if (filter === 'active') {
+    if (filter === FILTERS.ACTIVE) {
       return todo.completed === false;
     }
 
-    if (filter === 'completed') {
+    if (filter === FILTERS.COMPLETED) {
       return todo.completed === true;
     }
 
     return true;
   });
-  const loaderBackgroundClass = 'modal-background has-background-white-ter';
+
+  const allTodosCompleted =
+    todos.length > 0 && todos.every(todo => todo.completed === true);
 
   return (
     <div className="todoapp">
@@ -51,62 +57,23 @@ export const App: React.FC = () => {
       <div className="todoapp__content">
         <header className="todoapp__header">
           {/* this button should have `active` class only if all todos are completed */}
-          <button
-            type="button"
-            className="todoapp__toggle-all active"
-            data-cy="ToggleAllButton"
-          />
+          {todos.length > 0 && (
+            <button
+              type="button"
+              className={classNames('todoapp__toggle-all', {
+                active: allTodosCompleted,
+              })}
+              data-cy="ToggleAllButton"
+            />
+          )}
 
           {/* Add a todo on form submit */}
-          <form>
-            <input
-              data-cy="NewTodoField"
-              type="text"
-              className="todoapp__new-todo"
-              placeholder="What needs to be done?"
-            />
-          </form>
+          <NewTodo />
         </header>
 
         {todos.length > 0 && (
           <>
-            <section className="todoapp__main" data-cy="TodoList">
-              {visibleTodos.map(todo => (
-                <div
-                  key={todo.id}
-                  data-cy="Todo"
-                  className={todo.completed ? 'todo completed' : 'todo'}
-                >
-                  <label className="todo__status-label">
-                    <input
-                      data-cy="TodoStatus"
-                      type="checkbox"
-                      className="todo__status"
-                      checked={todo.completed}
-                    />
-                  </label>
-
-                  <span data-cy="TodoTitle" className="todo__title">
-                    {todo.title}
-                  </span>
-
-                  {/* Remove button appears only on hover */}
-                  <button
-                    type="button"
-                    className="todo__remove"
-                    data-cy="TodoDelete"
-                  >
-                    ×
-                  </button>
-
-                  {/* overlay will cover the todo while it is being deleted or updated */}
-                  <div data-cy="TodoLoader" className="modal overlay">
-                    <div className={loaderBackgroundClass} />
-                    <div className="loader" />
-                  </div>
-                </div>
-              ))}
-            </section>
+            <TodoList todos={visibleTodos} />
 
             {/* Hide the footer if there are no todos */}
             <footer className="todoapp__footer" data-cy="Footer">
@@ -115,44 +82,7 @@ export const App: React.FC = () => {
               </span>
 
               {/* Active link should have the 'selected' class */}
-              <nav className="filter" data-cy="Filter">
-                <a
-                  href="#/"
-                  onClick={() => setFilter('all')}
-                  className={
-                    filter === 'all' ? 'filter__link selected' : 'filter__link'
-                  }
-                  data-cy="FilterLinkAll"
-                >
-                  All
-                </a>
-
-                <a
-                  href="#/active"
-                  onClick={() => setFilter('active')}
-                  className={
-                    filter === 'active'
-                      ? 'filter__link selected'
-                      : 'filter__link'
-                  }
-                  data-cy="FilterLinkActive"
-                >
-                  Active
-                </a>
-
-                <a
-                  href="#/completed"
-                  onClick={() => setFilter('completed')}
-                  className={
-                    filter === 'completed'
-                      ? 'filter__link selected'
-                      : 'filter__link'
-                  }
-                  data-cy="FilterLinkCompleted"
-                >
-                  Completed
-                </a>
-              </nav>
+              <TodoFilter filter={filter} onFilterChange={setFilter} />
 
               {/* this button should be disabled if there are no completed todos */}
               <button
@@ -171,11 +101,12 @@ export const App: React.FC = () => {
       {/* Add the 'hidden' class to hide the message smoothly */}
       <div
         data-cy="ErrorNotification"
-        className={
-          !errorMessage
-            ? 'notification is-danger is-light has-text-weight-normal hidden'
-            : 'notification is-danger is-light has-text-weight-normal'
-        }
+        className={classNames(
+          'notification is-danger is-light has-text-weight-normal',
+          {
+            hidden: !errorMessage,
+          },
+        )}
       >
         <button
           onClick={() => setErrorMessage('')}
