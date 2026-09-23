@@ -1,14 +1,14 @@
 import classNames from 'classnames';
 
-export const FILTERS = {
-  ALL: 'all',
-  ACTIVE: 'active',
-  COMPLETED: 'completed',
-};
+export enum FILTERS {
+  ALL = 'all',
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+}
 
 type Props = {
-  filter: string;
-  onFilterChange: (filter: string) => void;
+  filter: FILTERS;
+  onFilterChange: (filter: FILTERS) => void;
 };
 
 export const TodoFilter = ({ filter, onFilterChange }: Props) => {

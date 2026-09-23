@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
 import classNames from 'classnames';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { UserWarning } from './UserWarning';
 import { USER_ID } from './api/todos';
 import { getTodos } from './api/todos';
@@ -17,38 +17,50 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     setErrorMessage('');
+
     getTodos()
-      .then(newTodos => {
-        setTodos(newTodos);
-      })
+      .then(setTodos)
       .catch(() => {
         setErrorMessage('Unable to load todos');
-        setTimeout(() => {
-          setErrorMessage('');
-        }, 3000);
       });
   }, []);
+
+  useEffect(() => {
+    if (errorMessage === '') {
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setErrorMessage('');
+    }, 3000);
+
+    return () => clearTimeout(timeoutId);
+  }, [errorMessage]);
+
+  const activeTodosCount = useMemo(() => {
+    return todos.filter(todo => todo.completed === false).length;
+  }, [todos]);
+
+  const visibleTodos = useMemo(() => {
+    return todos.filter(todo => {
+      switch (filter) {
+        case FILTERS.ACTIVE:
+          return todo.completed === false;
+        case FILTERS.COMPLETED:
+          return todo.completed === true;
+        default:
+          return true;
+      }
+    });
+  }, [todos, filter]);
+
+  const allTodosCompleted = useMemo(() => {
+    return todos.length > 0 && todos.every(todo => todo.completed === true);
+  }, [todos]);
+
   if (!USER_ID) {
     return <UserWarning />;
   }
-
-  const activeTodosCount = todos.filter(
-    todo => todo.completed === false,
-  ).length;
-  const visibleTodos = todos.filter(todo => {
-    if (filter === FILTERS.ACTIVE) {
-      return todo.completed === false;
-    }
-
-    if (filter === FILTERS.COMPLETED) {
-      return todo.completed === true;
-    }
-
-    return true;
-  });
-
-  const allTodosCompleted =
-    todos.length > 0 && todos.every(todo => todo.completed === true);
 
   return (
     <div className="todoapp">
